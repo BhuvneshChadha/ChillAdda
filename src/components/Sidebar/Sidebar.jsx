@@ -1,5 +1,4 @@
 import React from "react";
-import logoWhite from "../../assets/logo.png";
 import Languages from "./Languages";
 import Favourites from "./Favourites";
 import { FaGithub } from "react-icons/fa";
@@ -31,7 +30,7 @@ const Sidebar = ({ showNav, setShowNav }) => {
                 onClick={() => {
                   dispatch(setProgress(100));
                 }}
-                src={logoWhite}
+                src="/logo.png" 
                 alt="logo"
                 className=" lg:py-2  aspect-video w-[139px] h-[31px] lg:h-[62px] lg:w-[190px]"
               />

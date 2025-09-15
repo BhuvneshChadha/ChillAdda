@@ -1,6 +1,5 @@
 'use client'
 import React from 'react'
-import logo from '../assets/logo.png'
 import Image from 'next/image'
 import Searchbar from './Searchbar'
 import Link from 'next/link'
@@ -24,9 +23,12 @@ const Navbar = () => {
           <div className=' flex justify-center items-center'>
             <Link href='/'>
               <Image onClick={() => { dispatch(setProgress(100)) }}
-                src={logo} alt="logo" className=' lg:py-2  aspect-video w-[135px] h-[30.741px] lg:h-[58px] lg:w-[190px]' />
+                src="/logo.png"  alt="bhuvi" className=' lg:py-2  aspect-video w-[135px] h-[30.741px] lg:h-[58px] lg:w-[190px]' />
             </Link>
           </div>
+        </div>
+        <div className="hidden md:flex flex-1 justify-center items-center text-sm lg:text-base font-medium text-gray-300">
+          <span>❤️ Made with love by Bhuvi ❤️</span>
         </div>
         <Searchbar />
       </div>
