@@ -28,7 +28,7 @@ const Sidebar = ({ showNav, setShowNav }) => {
             <Link href='/'>
               <Image
                 onClick={() => { dispatch(setProgress(100)) }}
-                src="https://i.postimg.cc/Y0MKV0zB/c423b7bf-3280-4a0f-b050-3783c6e44fb6.jpg"
+                src="https://i.postimg.cc/JzRDY6Zs/7ebf878e-db5f-452b-ad9b-0869ace84630.jpg"
                 alt="bhuvi"
                 width={190}  
                 height={58}

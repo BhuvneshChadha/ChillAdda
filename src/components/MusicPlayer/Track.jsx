@@ -15,7 +15,7 @@ const Track = ({ isPlaying, isActive, activeSong, fullScreen }) => (
       <img
         src={
           activeSong?.image?.[2].url ||
-          "https://res.cloudinary.com/dbr73rpz9/image/upload/v1690447758/chibi_qxvxq6.png"
+          "https://i.postimg.cc/LX4pgWYM/cb18a5e4-dd44-48f7-97c4-b46cde6f7c60.jpg"
         }
         alt="cover art"
         className="rounded-full"
