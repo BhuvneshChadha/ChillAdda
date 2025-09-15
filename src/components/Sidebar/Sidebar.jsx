@@ -25,15 +25,15 @@ const Sidebar = ({ showNav, setShowNav }) => {
             className=" mx-4 text-2xl lg:text-3xl my-auto text-white cursor-pointer"
           />
           <div className=" flex justify-center items-center">
-            <Link href="/">
+            <Link href='/'>
               <Image
-                onClick={() => {
-                  dispatch(setProgress(100));
-                }}
-                src="/logo.png" 
-                alt="logo"
-                className=" lg:py-2  aspect-video w-[139px] h-[31px] lg:h-[62px] lg:w-[190px]"
-              />
+                onClick={() => { dispatch(setProgress(100)) }}
+                src="https://i.postimg.cc/Y0MKV0zB/c423b7bf-3280-4a0f-b050-3783c6e44fb6.jpg"
+                alt="bhuvi"
+                width={190}  
+                height={58}
+                className='lg:py-2 aspect-video w-[135px] h-[30.741px] lg:h-[58px] lg:w-[190px]'
+              />         
             </Link>
           </div>
         </div>
