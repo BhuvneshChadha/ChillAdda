@@ -132,8 +132,7 @@ export async function PUT(request) {
             );
         }
         // Hash password
-        // const hashedPassword = await bcrypt.hash(password, 10);
-        hashedPassword=password;
+        const hashedPassword = await bcrypt.hash(password, 10);
         // Update password
         const updatedUser = await User.findByIdAndUpdate(checkToken._id, {
             password: hashedPassword,

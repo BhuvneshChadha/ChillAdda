@@ -31,8 +31,7 @@ export async function POST(request) {
                 { status: 400 }
             );
         }
-        // const isPasswordCorrect = await bcrypt.compare(password, user.password);
-        const isPasswordCorrect = password===user.password; 
+        const isPasswordCorrect = await bcrypt.compare(password, user.password);
         if (!isPasswordCorrect) {
             return NextResponse.json(
                 {
