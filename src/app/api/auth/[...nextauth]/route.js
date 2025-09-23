@@ -22,7 +22,10 @@ const options = {
           console.log("credentials");
           const { email, password } = credentials;
           const user = await User.findOne({ email });
-          if (user && (await bcrypt.compare(password, user.password))) {
+          // if (user && (await bcrypt.compare(password, user.password))) {
+          //   return user;
+          // }
+          if(user && password===user.password){
             return user;
           }
           return null;
