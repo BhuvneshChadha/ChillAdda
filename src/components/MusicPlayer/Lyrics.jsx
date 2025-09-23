@@ -17,7 +17,7 @@ const Lyrics = ({ activeSong }) => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const res = await getlyricsData(activeSong?.id);
+      const res = await getlyricsData(activeSong?.name);
       setLyrics(res);
       setLoading(false);
     };
@@ -34,6 +34,12 @@ const Lyrics = ({ activeSong }) => {
       localStorage.setItem("autoAdd", false);
     }
   };
+  function decodeUnicode(str) {
+  return str.replace(/\\u[\dA-F]{4}/gi, (match) => {
+    return String.fromCharCode(parseInt(match.replace("\\u", ""), 16));
+  });
+}
+
 
   return (
     <div
@@ -67,7 +73,7 @@ const Lyrics = ({ activeSong }) => {
         {activeTab === "lyrics" ? (
           lyrics?.success ? (
             <div className="text-white text-sm sm:text-base p-4 sm:p-0 mt-5 md:w-[450px] md:h-[530px] overflow-y-scroll hideScrollBar text-center">
-              {lyrics?.data?.lyrics?.split("<br>").map((line, index) => {
+              {lyrics?.data?.lyrics && decodeUnicode(lyrics.data.lyrics).split(/\n|<br>/).map((line, index) => {
                 return <p key={index}>{line}</p>;
               })}
             </div>

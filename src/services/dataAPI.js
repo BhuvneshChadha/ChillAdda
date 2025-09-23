@@ -57,17 +57,70 @@ export async function getplaylistData(id) {
 }
 
 // get Lyrics data
+// export async function getlyricsData(id) {
+//   try {
+//     const lyricsUrl = `https://lyrics.lewdhutao.my.eu.org/v2/musixmatch/lyrics?title=${encodeURIComponent(id)}`;
+//     const lyricsUrl2=`https://lyrics.lewdhutao.my.eu.org/v2/youtube/lyrics?title=${encodeURIComponent(id)}`    // Use AllOrigins proxy
+//     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(lyricsUrl)}`;
+
+//     const response = await fetch(proxyUrl);
+    
+//     const data = await response.json(); // <-- first parse
+// // data.contents is a string, parse it
+// const lyricsData = JSON.parse(data.contents);console.log(lyricsData,"lyr")
+//     return lyricsData;
+//   } catch (error) {
+//     console.log(error);
+//   }
+// }
 export async function getlyricsData(id) {
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SAAVN_API}/api/songs/${id}/lyrics`
-    );
-    const data = await response.json();
-    return data;
+    const lyricsUrl2 = `https://lyrics.lewdhutao.my.eu.org/v2/musixmatch/lyrics?title=${encodeURIComponent(id)}`;
+    const lyricsUrl1 = `https://lyrics.lewdhutao.my.eu.org/v2/youtube/lyrics?title=${encodeURIComponent(id)}`;
+
+    // Helper to fetch & check validity
+    const fetchLyrics = async (url) => {
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+      const response = await fetch(proxyUrl);
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      if (!data.contents) return null;
+
+      let parsed;
+      try {
+        parsed = JSON.parse(data.contents);
+      } catch {
+        return null;
+      }
+
+      // validate
+      if (parsed?.data?.lyrics && parsed.data.lyrics.trim() !== "") {
+        return parsed;
+      }
+      return null;
+    };
+
+    // Try Musixmatch first
+    let result = await fetchLyrics(lyricsUrl1);
+
+    // If no valid lyrics, try YouTube
+    if (!result) {
+      result = await fetchLyrics(lyricsUrl2);
+    }
+    
+    // Final return
+    if (result) {
+      return { success: true, data: result.data };
+    } else {
+      return { success: false };
+    }
   } catch (error) {
-    console.log(error);
+    console.error("Lyrics fetch error:", error);
+    return { success: false };
   }
 }
+
 
 // get artist data
 export async function getArtistData(id) {
@@ -81,7 +134,6 @@ export async function getArtistData(id) {
     console.log(error);
   }
 }
-
 // get artist songs
 export async function getArtistSongs(id, page) {
   try {

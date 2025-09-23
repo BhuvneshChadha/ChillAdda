@@ -10,16 +10,58 @@ html {
 
 body,
 .gradient {
-  background: rgb(100, 201, 215);
-  background: linear-gradient(180deg, rgba(100, 201, 215, 0.8996848739495799) 0%, rgba(0, 8, 20, 1) 32%);
+  --top-color: rgba(255, 200, 200, 0.9); /* starting color */
+
+  background: linear-gradient(
+    180deg,
+    var(--top-color) 0%,
+    rgba(0, 8, 20, 1) 32%
+  );
   background-repeat: no-repeat;
   background-attachment: fixed;
   background-size: cover;
   background-position: center;
   overflow-x: hidden;
+
+  /* smooth breathing animation */
+  animation: smoothBreathe 15s infinite;
+  animation-timing-function: ease-in-out;
 }
 
+@keyframes smoothBreathe {
+  0% {
+    --top-color: rgba(255, 200, 200, 0.9); /* very light red */
+  }
+  20% {
+    --top-color: rgba(255, 230, 230, 0.95); /* slightly brighter red */
+  }
+  40% {
+    --top-color: rgba(200, 255, 200, 0.9); /* very light green */
+  }
+  60% {
+    --top-color: rgba(230, 255, 230, 0.95); /* slightly brighter green */
+  }
+  80% {
+    --top-color: rgba(255, 200, 255, 0.9); /* very light pink */
+  }
+  100% {
+    --top-color: rgba(255, 200, 200, 0.9); /* back to red */
+  }
+}
 
+body::after {
+  content: "Bhuvnesh Chadha";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.03); /* faint but visible */
+  pointer-events: none;
+  z-index: 5;
+  white-space: nowrap;
+}
 
 .download-button {
   position: relative;

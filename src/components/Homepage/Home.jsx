@@ -24,17 +24,73 @@ const Home = () => {
   // salutation
   const currentTime = new Date();
   const currentHour = currentTime.getHours();
+  const salutationTranslations = {
+    english: {
+      morning: "Good morning",
+      afternoon: "Good afternoon",
+      evening: "Good evening",
+    },
+    hindi: {
+      common: "नमस्ते", 
+    },
+    punjabi: {
+      common: "ਸਤਿ ਸ਼੍ਰੀ ਅਕਾਲ", 
+    },
+    rajasthani: {
+      common: "राम राम सा", 
+    },
+    haryanvi: {
+      common: "राम राम", 
+    },
+    tamil: {
+      morning: "காலை வணக்கம்",
+      afternoon: "வணக்கம்",
+      evening: "மாலை வணக்கம்",
+    },
+    telugu: {
+      morning: "శుభోదయం",
+      afternoon: "నమస్తే",
+      evening: "శుభ సాయంత్రం",
+    },
+    odia: {
+      morning: "ସୁପ୍ରଭାତ",
+      afternoon: "ନମସ୍କାର",
+      evening: "ଶୁଭ ସନ୍ଧ୍ୟା",
+    },
+  };
+
+  function getSalutation(hour, languages) {
+    let selectedLang = "english"; // fallback
+
+    if (languages?.length === 1) {
+      selectedLang = languages[0];
+    } else if (languages?.length > 1) {
+      // just pick the first valid language from array
+      selectedLang = languages[0];
+    }
+
+    const translations = salutationTranslations[selectedLang];
+
+    if (!translations) {
+      return salutationTranslations["english"].morning; // fallback
+    }
+
+    // if language has only a "common" salutation (like punjabi/hindi/raj)
+    if (translations.common) {
+      return translations.common;
+    }
+
+    // else decide based on time
+    let period = "";
+    if (hour >= 5 && hour < 12) period = "morning";
+    else if (hour >= 12 && hour < 18) period = "afternoon";
+    else period = "evening";
+
+    return translations[period] || salutationTranslations["english"].morning;
+  } 
 
   let salutation = '';
-  if (currentHour >= 5 && currentHour < 12) {
-    salutation = 'Good morning';
-  } else if (currentHour >= 12 && currentHour < 18) {
-    salutation = 'Good afternoon';
-  } else {
-    salutation = 'Good evening';
-  }
-
-
+  salutation = getSalutation(currentHour, languages);
 
   useEffect(() => {
     const fetchData = async () => {
