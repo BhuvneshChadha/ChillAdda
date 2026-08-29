@@ -2,7 +2,7 @@
 export async function homePageData(language) {
   try {
     const response = await fetch(
-      `${"https://saavn.zendax.me/api"}/modules?language=${language.toString()}`,
+      `${process.env.NEXT_PUBLIC_SAAVN_API}/api/modules?language=${language.toString()}`,
       {
         next: {
           revalidate: 14400,
