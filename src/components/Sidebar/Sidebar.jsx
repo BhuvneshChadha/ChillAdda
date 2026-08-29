@@ -58,14 +58,14 @@ const Sidebar = ({ showNav, setShowNav }) => {
           </p>
         </Link>
         <a
-          href="https://github.com/himanshu8443/ChillAdda"
+          href="https://github.com/BhuvneshChadha/ChillAdda"
           target="_blank"
           rel="noreferrer"
         >
-          <p className=" hover:border border-gray-200 p-1 font-medium w-fit rounded cursor-pointer text-sm flex items-center gap-1">
+          {/* <p className=" hover:border border-gray-200 p-1 font-medium w-fit rounded cursor-pointer text-sm flex items-center gap-1">
             <FaGithub />
             Github
-          </p>
+          </p> */}
         </a>
       </div>
     </div>

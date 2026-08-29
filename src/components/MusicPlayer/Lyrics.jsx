@@ -1,5 +1,5 @@
 "use client";
-import { getRecommendedSongs, getlyricsData } from "@/services/dataAPI";
+import { getlyricsData } from "@/services/dataAPI";
 import { useState } from "react";
 import React, { useEffect } from "react";
 import { useSelector } from "react-redux";
