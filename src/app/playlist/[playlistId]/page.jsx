@@ -64,9 +64,9 @@ export default page;
 // 4 hour
 export const revalidate = 14400;
 
-export async function generateStaticParams() {
-  const res = await homePageData(["english", "hindi", "punjabi"]);
-  return res?.charts?.map((playlist) => ({
-    playlistId: playlist?.id.toString(),
-  }));
-}
+// export async function generateStaticParams() {
+//   const res = await homePageData(["english", "hindi", "punjabi"]);
+//   return res?.charts?.map((playlist) => ({
+//     playlistId: playlist?.id.toString(),
+//   }));
+// }
