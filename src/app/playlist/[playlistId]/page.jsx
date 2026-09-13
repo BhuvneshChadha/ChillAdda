@@ -44,9 +44,12 @@ const page = async ({ params }) => {
             {playlistData?.name}
           </h1>
           <ul className="flex items-center text-center flex-col gap-3 text-gray-300">
-            <li className="text-sm font-semibold">
-              {playlistData?.description}
-            </li>
+             <li
+    className="text-sm font-semibold text-left w-full"
+    dangerouslySetInnerHTML={{
+      __html: playlistData?.description || "",
+    }}
+  />
           </ul>
           <PlayButton songList={playlistData} />
         </div>
