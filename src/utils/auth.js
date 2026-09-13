@@ -1,6 +1,6 @@
-import { getToken } from "next-auth/jwt";
 import User from "@/models/User";
 import dbConnect from "@/utils/dbconnect";
+import { getToken } from "next-auth/jwt";
 
 
 // check if user is logged in
@@ -10,7 +10,7 @@ export default async function auth(req) {
         return null
     }
     try {
-        dbConnect();
+        await dbConnect();
         const user = await User.findOne({ email: token.email });
         if (!user) {
             return null

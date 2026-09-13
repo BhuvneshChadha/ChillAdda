@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
 import User from "@/models/User";
 import dbConnect from "@/utils/dbconnect";
 import Playlist from "@/models/Playlist";
 import UserData from "@/models/UserData";
 import auth from "@/utils/auth";
+import { getToken } from "next-auth/jwt";
 
 
 // Create a new playlist
@@ -141,7 +141,7 @@ export async function GET(req){
                 { status: 404 }
             );
         }
-        const userData = await UserData.findById(user.userData).populate("playlists");
+        const userData = await UserData.findById(user.userData);
         if (!userData) {
             return NextResponse.json(
                 {
@@ -157,7 +157,9 @@ export async function GET(req){
                 success: true,
                 message: "Playlists fetched",
                 data: {
-                    playlists: userData.playlists
+                    playlists: await Promise.all(
+                        userData.playlists.map((playlistId) => Playlist.findById(playlistId))
+                    )
                 }
             }
         );

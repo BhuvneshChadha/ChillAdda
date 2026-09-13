@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
 import User from "@/models/User";
 import dbConnect from "@/utils/dbconnect";
+import { getToken } from "next-auth/jwt";
 
 
 // Get user info

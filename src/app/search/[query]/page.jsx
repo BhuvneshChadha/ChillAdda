@@ -13,7 +13,6 @@ import {
   setActiveSong,
   setFullScreen,
 } from "@/redux/features/playerSlice";
-import Image from "next/image";
 import Link from "next/link";
 import SongListSkeleton from "@/components/SongListSkeleton";
 import { setProgress } from "@/redux/features/loadingBarSlice";
@@ -131,7 +130,7 @@ const page = ({ params }) => {
                   <SwiperSlide key={artist?.id}>
                     <Link href={`/artist/${artist?.id}`}>
                       <div className=" flex flex-col justify-center items-center">
-                        <Image
+                        <img
                           src={artist?.image?.[2]?.url}
                           alt={artist?.name}
                           width={200}
@@ -157,7 +156,7 @@ const page = ({ params }) => {
           <div className="mt-10 text-gray-200">
             <SwiperLayout title={"Playlists"}>
               {searchedData &&
-                searchedData?.albums?.results?.length > 0 &&
+                searchedData?.playlists?.results?.length > 0 &&
                 searchedData?.playlists?.results?.map((song) => (
                   <SwiperSlide key={song?.id}>
                     <SongCard song={song} />

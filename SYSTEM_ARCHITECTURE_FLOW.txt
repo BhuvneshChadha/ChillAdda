@@ -1,0 +1,843 @@
+================================================================================
+                    CHILLADDA - SYSTEM ARCHITECTURE & FLOW DIAGRAMS
+================================================================================
+
+
+OVERALL SYSTEM ARCHITECTURE:
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              CLIENT (Browser)                                │
+│                                                                               │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                         React/Next.js App                              │  │
+│  │                                                                         │  │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                │  │
+│  │  │  Components  │  │    Redux     │  │  Service     │                │  │
+│  │  │  (UI Layer)  │←→│    Store     │←→│   Layer      │                │  │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘                │  │
+│  │         ↑                  ↑                  ↓                         │  │
+│  │         │                  │         ┌──────────────┐                 │  │
+│  │         │                  └─────────│   Redux      │                 │  │
+│  │         │                            │  Persist     │                 │  │
+│  │         │                            │(localStorage)│                 │  │
+│  │         │                            └──────────────┘                 │  │
+│  └─────────┼─────────────────────────────────────────────────────────────┘  │
+│            │                                                                  │
+└────────────┼──────────────────────────────────────────────────────────────────┘
+             │
+             │ HTTP/HTTPS Requests
+             │
+             ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         SERVER (Next.js/Vercel)                              │
+│                                                                               │
+│  ┌────────────────────────────────────────────────────────────────────────┐ │
+│  │                        Next.js API Routes                               │ │
+│  │                                                                          │ │
+│  │  /api/login          /api/signup        /api/favourite                 │ │
+│  │  /api/userPlaylists  /api/userInfo      /api/forgotPassword            │ │
+│  │                                                                          │ │
+│  │  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐          │ │
+│  │  │  Auth Handler  │  │  JWT Verify    │  │  DB Queries    │          │ │
+│  │  └────────────────┘  └────────────────┘  └────────────────┘          │ │
+│  └────────────────────────────────────┬─────────────────────────────────────┘ │
+│                                       │                                       │
+└───────────────────────────────────────┼───────────────────────────────────────┘
+                                        │
+                                        ↓
+                    ┌───────────────────────────────────┐
+                    │     MongoDB Atlas (Cloud)         │
+                    │                                   │
+                    │  ┌──────────┐  ┌──────────────┐  │
+                    │  │   User   │  │   UserData   │  │
+                    │  └──────────┘  └──────────────┘  │
+                    │  ┌──────────────┐                │
+                    │  │   Playlist   │                │
+                    │  └──────────────┘                │
+                    └───────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      EXTERNAL APIs (Music Data)                              │
+│                                                                               │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │  JioSaavn API (Your Vercel Deployment)                               │  │
+│  │  https://jiosaavn-api-sigma-sandy.vercel.app                         │  │
+│  │                                                                        │  │
+│  │  Endpoints:                                                            │  │
+│  │  • /modules?language=hindi    → Homepage data                        │  │
+│  │  • /api/songs/{id}            → Song details & streaming URL         │  │
+│  │  • /api/albums?id={id}        → Album data                           │  │
+│  │  • /api/playlists?id={id}     → Playlist data                        │  │
+│  │  • /api/artists?id={id}       → Artist info                          │  │
+│  │  • /api/search?query={query}  → Search results                       │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+│                                                                               │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │  Lyrics API (via AllOrigins Proxy)                                   │  │
+│  │  https://api.allorigins.win/get?url=...                              │  │
+│  │                                                                        │  │
+│  │  Sources:                                                              │  │
+│  │  • Musixmatch API (primary)                                           │  │
+│  │  • YouTube Lyrics API (fallback)                                      │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+USER AUTHENTICATION FLOW:
+================================================================================
+
+SIGNUP FLOW:
+------------
+User Input (Email/Password)
+        │
+        ├─► Validate Input (Frontend)
+        │
+        ├─► POST /api/signup
+        │       │
+        │       ├─► Check if email exists
+        │       │
+        │       ├─► Hash password (bcrypt)
+        │       │       salt rounds = 10
+        │       │
+        │       ├─► Create User document
+        │       │       {userName, email, password, imageUrl}
+        │       │
+        │       ├─► Create UserData document
+        │       │       {favourites: [], playlists: [], songHistory: []}
+        │       │
+        │       ├─► Link UserData to User
+        │       │
+        │       ├─► Generate JWT Token
+        │       │       payload: {email, id}
+        │       │       secret: process.env.JWT_SECRET
+        │       │       expiry: 30 days
+        │       │
+        │       └─► Set HTTP-only Cookie
+        │               name: "token"
+        │               maxAge: 30 days
+        │
+        └─► Redirect to Home Page
+
+
+LOGIN FLOW:
+-----------
+User Input (Email/Password)
+        │
+        ├─► POST /api/login
+        │       │
+        │       ├─► Find user by email
+        │       │
+        │       ├─► Compare passwords
+        │       │       bcrypt.compare(inputPassword, hashedPassword)
+        │       │
+        │       ├─► Generate JWT Token
+        │       │
+        │       └─► Set HTTP-only Cookie
+        │
+        └─► Redirect to Home
+
+
+GOOGLE OAUTH FLOW (NextAuth):
+------------------------------
+User clicks "Sign in with Google"
+        │
+        ├─► NextAuth.js handles OAuth
+        │       │
+        │       ├─► Redirect to Google
+        │       │
+        │       ├─► User authorizes app
+        │       │
+        │       ├─► Google returns profile
+        │       │
+        │       ├─► Check if user exists
+        │       │
+        │       ├─► If no: Create user
+        │       │   If yes: Update user
+        │       │
+        │       └─► Create session
+        │
+        └─► Redirect to Home
+
+
+MUSIC PLAYBACK FLOW:
+================================================================================
+
+HOME PAGE LOADING:
+------------------
+Component Mount
+        │
+        ├─► homePageData("hindi")
+        │       │
+        │       ├─► fetch("https://jiosaavn-api.../modules?language=hindi")
+        │       │
+        │       ├─► Response (cached 4 hours):
+        │       │       {
+        │       │         data: {
+        │       │           trending: [{id, name, image, ...}, ...],
+        │       │           charts: [...],
+        │       │           albums: [...],
+        │       │           playlists: [...]
+        │       │         }
+        │       │       }
+        │       │
+        │       └─► Render Swiper Carousels
+        │
+        └─► Display Music Collections
+
+
+SONG PLAY FLOW:
+---------------
+User clicks song
+        │
+        ├─► Dispatch Redux Action: setActiveSong({song, data, index})
+        │       │
+        │       ├─► Update Redux State:
+        │       │       activeSong: {song object}
+        │       │       currentSongs: [array of songs]
+        │       │       currentIndex: index
+        │       │       isActive: true
+        │       │       isPlaying: true
+        │       │
+        │       └─► Redux Persist saves to localStorage
+        │
+        ├─► getSongData(songId)
+        │       │
+        │       ├─► fetch("/api/songs/{id}")
+        │       │
+        │       └─► Response:
+        │               {
+        │                 data: {
+        │                   id: "abc123",
+        │                   name: "Song Name",
+        │                   downloadUrl: [
+        │                     {quality: "320kbps", url: "https://aac.saavncdn.com/..."}
+        │                   ],
+        │                   image: [{quality: "500x500", url: "..."}],
+        │                   artists: {primary: [...], featured: [...]},
+        │                   album: {name: "...", id: "..."},
+        │                   duration: 240
+        │                 }
+        │               }
+        │
+        ├─► MusicPlayer Component Re-renders
+        │       │
+        │       ├─► <audio> element updates src
+        │       │       src = downloadUrl[0].url
+        │       │
+        │       ├─► audio.play() called
+        │       │
+        │       └─► Player UI updates:
+        │               - Song name displays
+        │               - Artist name displays
+        │               - Album art displays
+        │               - Seekbar starts updating
+        │               - Play button → Pause button
+        │
+        └─► Song Plays
+
+
+SEARCH FLOW:
+================================================================================
+
+User types in search box
+        │
+        ├─► Input debounced (500ms)
+        │
+        ├─► getSearchedData(query)
+        │       │
+        │       ├─► fetch("/api/search?query={query}")
+        │       │
+        │       └─► Response:
+        │               {
+        │                 data: {
+        │                   songs: {results: [...]},
+        │                   albums: {results: [...]},
+        │                   artists: {results: [...]},
+        │                   playlists: {results: [...]}
+        │                 }
+        │               }
+        │
+        ├─► Display Results in Categories:
+        │       - Songs (play immediately)
+        │       - Albums (navigate to album page)
+        │       - Artists (navigate to artist page)
+        │       - Playlists (navigate to playlist page)
+        │
+        └─► User clicks result → Navigate or Play
+
+
+PLAYLIST MANAGEMENT FLOW:
+================================================================================
+
+CREATE PLAYLIST:
+----------------
+User clicks "Create Playlist" button
+        │
+        ├─► Modal opens with input field
+        │
+        ├─► User enters playlist name
+        │
+        ├─► POST /api/userPlaylists
+        │       body: {name: "My Playlist"}
+        │       │
+        │       ├─► Verify JWT token from cookie
+        │       │
+        │       ├─► Get user ID from token
+        │       │
+        │       ├─► Create Playlist document:
+        │       │       {
+        │       │         name: "My Playlist",
+        │       │         songs: [],
+        │       │         user: userId,
+        │       │         createdAt: Date.now()
+        │       │       }
+        │       │
+        │       ├─► Push playlist ID to UserData.playlists[]
+        │       │
+        │       └─► Return: {success: true, data: playlist}
+        │
+        ├─► Update Redux state (add playlist)
+        │
+        ├─► Show success toast
+        │
+        └─► Playlist appears in sidebar
+
+
+ADD SONG TO PLAYLIST:
+---------------------
+User clicks "+" icon on song → "Add to Playlist"
+        │
+        ├─► Modal shows user's playlists
+        │
+        ├─► User selects playlist
+        │
+        ├─► POST /api/userPlaylists/songs
+        │       body: {
+        │         playlistID: "playlist_id",
+        │         song: {full song object with metadata}
+        │       }
+        │       │
+        │       ├─► Verify JWT token
+        │       │
+        │       ├─► Find playlist by ID
+        │       │
+        │       ├─► Check if song already exists
+        │       │
+        │       ├─► If not, push song to playlist.songs[]
+        │       │
+        │       ├─► Save playlist
+        │       │
+        │       └─► Return: {success: true, message: "Song added"}
+        │
+        ├─► Show success toast: "Added to {playlist name}"
+        │
+        └─► Modal closes
+
+
+REMOVE SONG FROM PLAYLIST:
+--------------------------
+User clicks "X" icon on song in playlist view
+        │
+        ├─► DELETE /api/userPlaylists/songs
+        │       body: {playlistID: "...", song: {id: "..."}}
+        │       │
+        │       ├─► Verify JWT token
+        │       │
+        │       ├─► Find playlist
+        │       │
+        │       ├─► Filter out song: playlist.songs.filter(s => s.id !== songId)
+        │       │
+        │       ├─► Save updated playlist
+        │       │
+        │       └─► Return: {success: true}
+        │
+        ├─► Update UI (remove song from list)
+        │
+        └─► Show toast: "Removed from playlist"
+
+
+DELETE PLAYLIST:
+----------------
+User clicks delete icon on playlist
+        │
+        ├─► Confirm modal: "Are you sure?"
+        │
+        ├─► User confirms
+        │
+        ├─► DELETE /api/userPlaylists
+        │       body: {playlistId: "..."}
+        │       │
+        │       ├─► Verify JWT token
+        │       │
+        │       ├─► Find and delete Playlist document
+        │       │
+        │       ├─► Remove playlist ID from UserData.playlists[]
+        │       │
+        │       └─► Return: {success: true}
+        │
+        ├─► Update Redux state
+        │
+        └─► Playlist removed from sidebar
+
+
+FAVORITES FLOW:
+================================================================================
+
+ADD/REMOVE FAVORITE:
+--------------------
+User clicks heart icon on song
+        │
+        ├─► Current state: filled = true/false
+        │
+        ├─► POST /api/favourite
+        │       body: {id: "song_id"}
+        │       │
+        │       ├─► Verify JWT token
+        │       │
+        │       ├─► Get user's UserData
+        │       │
+        │       ├─► Check if song in favourites[]
+        │       │
+        │       ├─► If YES:
+        │       │       Remove from array (toggle OFF)
+        │       │
+        │       ├─► If NO:
+        │       │       Add to array (toggle ON)
+        │       │
+        │       ├─► Save UserData
+        │       │
+        │       └─► Return: {
+        │               success: true,
+        │               message: "Added/Removed",
+        │               favourites: [updated array]
+        │             }
+        │
+        ├─► Update local state
+        │       filled = !filled
+        │
+        ├─► Icon color changes
+        │       Filled: Red (#ff0000)
+        │       Unfilled: White/Gray
+        │
+        └─► Show toast: "Added to favorites" / "Removed from favorites"
+
+
+VIEW FAVORITES:
+---------------
+User navigates to /favourite page
+        │
+        ├─► getFavourite() called
+        │       │
+        │       ├─► GET /api/favourite
+        │       │
+        │       ├─► Verify JWT token
+        │       │
+        │       ├─► Get UserData.favourites[]
+        │       │
+        │       └─► Return: {data: {favourites: [song objects]}}
+        │
+        ├─► Display all favorited songs in grid
+        │
+        └─► User can play, remove, or add to playlist
+
+
+LYRICS FETCHING FLOW:
+================================================================================
+
+User clicks "Lyrics" button on player
+        │
+        ├─► getlyricsData(songName)
+        │       │
+        │       ├─► Try Source 1: Musixmatch
+        │       │       │
+        │       │       ├─► Build URL:
+        │       │       │   "https://lyrics.lewdhutao.my.eu.org/v2/musixmatch/lyrics?title={songName}"
+        │       │       │
+        │       │       ├─► Proxy through AllOrigins (bypass CORS):
+        │       │       │   "https://api.allorigins.win/get?url={encodedLyricsUrl}"
+        │       │       │
+        │       │       ├─► Fetch response
+        │       │       │
+        │       │       ├─► Parse JSON: JSON.parse(response.contents)
+        │       │       │
+        │       │       ├─► Validate: lyrics exist and not empty
+        │       │       │
+        │       │       └─► If valid: return {success: true, data: lyrics}
+        │       │
+        │       ├─► If Source 1 fails, Try Source 2: YouTube
+        │       │       │
+        │       │       ├─► Same proxy process
+        │       │       │
+        │       │       └─► Return if valid
+        │       │
+        │       └─► If both fail: return {success: false}
+        │
+        ├─► If success:
+        │       Display lyrics in scrollable modal/panel
+        │       Lyrics auto-scroll (optional)
+        │
+        └─► If fail:
+                Display: "Lyrics not available for this song"
+
+
+DOWNLOAD SONG FLOW:
+================================================================================
+
+User clicks download button on player
+        │
+        ├─► react-use-downloader hook triggered
+        │
+        ├─► Download from URL:
+        │       activeSong.downloadUrl[0].url
+        │       (320kbps quality from JioSaavn CDN)
+        │
+        ├─► Browser downloads file:
+        │       Filename: {songName} - {artistName}.mp3
+        │       Save location: User's Downloads folder
+        │
+        ├─► Show progress bar (0-100%)
+        │
+        ├─► On complete:
+        │       Show toast: "Download complete!"
+        │
+        └─► File saved to disk
+
+
+ARTIST PAGE FLOW:
+================================================================================
+
+User clicks artist name or artist card
+        │
+        ├─► Navigate to /artist/[id]
+        │
+        ├─► getArtistData(id)
+        │       │
+        │       ├─► fetch("/api/artists?id={id}")
+        │       │
+        │       └─► Response:
+        │               {
+        │                 data: {
+        │                   id, name, image,
+        │                   followerCount,
+        │                   topSongs: [...],
+        │                   topAlbums: [...]
+        │                 }
+        │               }
+        │
+        ├─► Display:
+        │       - Artist image (banner)
+        │       - Artist name
+        │       - Follower count
+        │       - Top songs (play button on each)
+        │
+        ├─► Tabs: Songs | Albums
+        │
+        ├─► getArtistSongs(id, page)
+        │       Paginated song list
+        │
+        └─► getArtistAlbums(id, page)
+                Paginated album list
+
+
+ALBUM PAGE FLOW:
+================================================================================
+
+User clicks album
+        │
+        ├─► Navigate to /album/[id]
+        │
+        ├─► getAlbumData(id)
+        │       │
+        │       ├─► fetch("/api/albums?id={id}")
+        │       │
+        │       └─► Response:
+        │               {
+        │                 data: {
+        │                   id, name, image,
+        │                   year, songCount,
+        │                   artists: {...},
+        │                   songs: [{...}, {...}, ...]
+        │                 }
+        │               }
+        │
+        ├─► Display:
+        │       - Album cover (large)
+        │       - Album name, year
+        │       - Artist names
+        │       - Play All button
+        │       - Song list with track numbers
+        │
+        ├─► User clicks "Play All":
+        │       Dispatch all songs to Redux queue
+        │       Start playing from track 1
+        │
+        └─► User clicks individual song:
+                Play that song with album as queue
+
+
+RECOMMENDATION FLOW:
+================================================================================
+
+Song is currently playing
+        │
+        ├─► getRecommendedSongs(artistId, songId)
+        │       │
+        │       ├─► fetch("/api/songs/{songId}/suggestions")
+        │       │
+        │       └─► Response:
+        │               {
+        │                 data: [
+        │                   {similar song 1},
+        │                   {similar song 2},
+        │                   ...
+        │                 ]
+        │               }
+        │
+        ├─► Display recommendations below current song
+        │
+        ├─► User can click to play
+        │
+        └─► Auto-play next:
+                When current song ends, play next recommended song
+
+
+REDUX STATE FLOW:
+================================================================================
+
+USER ACTIONS → REDUX ACTIONS → REDUCERS → STATE UPDATE → UI RE-RENDER
+
+Example: Playing a Song
+------------------------
+1. User clicks song
+        ↓
+2. Dispatch: setActiveSong({song, data, i})
+        ↓
+3. playerSlice reducer updates state:
+        {
+          activeSong: songObject,
+          currentSongs: arrayOfSongs,
+          currentIndex: i,
+          isActive: true,
+          isPlaying: true
+        }
+        ↓
+4. Redux Persist saves to localStorage
+        ↓
+5. useSelector hooks in components get updated state
+        ↓
+6. MusicPlayer component re-renders with new song
+        ↓
+7. <audio> element src updates
+        ↓
+8. Song plays
+
+
+PWA (Progressive Web App) FLOW:
+================================================================================
+
+SERVICE WORKER REGISTRATION:
+----------------------------
+App loads → Service worker registers
+        │
+        ├─► Cache static assets:
+        │       - HTML, CSS, JS files
+        │       - Images, icons
+        │       - Fonts
+        │
+        ├─► Cache API responses (optional)
+        │
+        └─► Enable offline functionality
+
+
+INSTALL APP:
+------------
+Browser detects PWA manifest
+        │
+        ├─► Show "Install App" prompt
+        │
+        ├─► User clicks "Install"
+        │
+        ├─► App icon added to:
+        │       - Home screen (mobile)
+        │       - Desktop (Windows/Mac/Linux)
+        │
+        └─► App runs in standalone window (no browser UI)
+
+
+DATA PERSISTENCE FLOW:
+================================================================================
+
+REDUX PERSIST:
+--------------
+Redux state changes
+        │
+        ├─► Redux Persist middleware intercepts
+        │
+        ├─► Serialize state to JSON
+        │
+        ├─► Save to localStorage:
+        │       key: "persist:root"
+        │       value: {
+        │         player: {...},
+        │         languages: {...}
+        │       }
+        │
+        └─► On page reload:
+                localStorage → rehydrate → Redux state restored
+
+
+COOKIES (JWT):
+--------------
+User logs in
+        │
+        ├─► Server generates JWT
+        │
+        ├─► Server sets cookie:
+        │       Set-Cookie: token={jwt}; HttpOnly; MaxAge=2592000; Path=/
+        │
+        ├─► Browser stores cookie
+        │
+        ├─► Subsequent requests:
+        │       Cookie automatically sent in request headers
+        │
+        └─► Server verifies token on each API call
+
+
+MONGODB:
+--------
+API route called
+        │
+        ├─► Connect to MongoDB (connection pooling)
+        │
+        ├─► Execute query:
+        │       User.findOne({email: "..."})
+        │       UserData.updateOne({}, {$push: {favourites: {...}}})
+        │       Playlist.create({name: "...", songs: []})
+        │
+        ├─► Data persisted to MongoDB Atlas
+        │
+        └─► Response sent to client
+
+
+SECURITY FLOW:
+================================================================================
+
+PASSWORD HASHING:
+-----------------
+User signs up with password: "mypassword123"
+        │
+        ├─► bcrypt.hash("mypassword123", 10)
+        │       salt rounds = 10 (2^10 iterations)
+        │       │
+        │       └─► Hashed: "$2a$10$abcdefg..."
+        │
+        ├─► Store in DB: {password: "$2a$10$abcdefg..."}
+        │
+        └─► Login:
+                bcrypt.compare(inputPassword, storedHash)
+                Returns: true/false
+
+
+JWT FLOW:
+---------
+User authenticates
+        │
+        ├─► Server generates token:
+        │       Jwt.sign(
+        │         {email: "user@example.com", id: "user_id"},
+        │         process.env.JWT_SECRET,
+        │         {expiresIn: "30d"}
+        │       )
+        │       │
+        │       └─► Token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        │
+        ├─► Set HTTP-only cookie
+        │       response.cookies.set("token", token, {
+        │         httpOnly: true,  // JS can't access
+        │         maxAge: 30 days
+        │       })
+        │
+        ├─► Browser stores cookie (automatic)
+        │
+        ├─► User makes API request
+        │       Cookie automatically sent
+        │
+        ├─► Server verifies token:
+        │       Jwt.verify(token, process.env.JWT_SECRET)
+        │       │
+        │       └─► Decoded: {email: "...", id: "...", iat: ..., exp: ...}
+        │
+        └─► If valid: proceed with request
+                If invalid/expired: return 401 Unauthorized
+
+
+API PROTECTION:
+---------------
+API Route called
+        │
+        ├─► Middleware: Extract token from cookie
+        │
+        ├─► Verify token
+        │
+        ├─► If invalid:
+        │       Return 401: "Unauthorized"
+        │
+        ├─► If valid:
+        │       Extract user ID from token
+        │       Attach to request object
+        │       Proceed to handler
+        │
+        └─► Handler executes with authenticated user context
+
+
+PERFORMANCE OPTIMIZATION FLOW:
+================================================================================
+
+NEXT.JS CACHING:
+----------------
+API request: homePageData()
+        │
+        ├─► Check cache (4-hour TTL)
+        │
+        ├─► If cached:
+        │       Return cached response (instant)
+        │
+        ├─► If not cached or stale:
+        │       Fetch from JioSaavn API
+        │       Cache response
+        │       Return fresh data
+        │
+        └─► Next request within 4 hours: cached response
+
+
+IMAGE OPTIMIZATION:
+-------------------
+<Image src="album-cover.jpg" />
+        │
+        ├─► Next.js Image component intercepts
+        │
+        ├─► Optimize image:
+        │       - Resize to display size
+        │       - Convert to WebP (if supported)
+        │       - Compress
+        │       - Lazy load (below fold)
+        │
+        └─► Serve optimized image
+
+
+CODE SPLITTING:
+---------------
+User navigates to /artist/[id]
+        │
+        ├─► Next.js loads only required code:
+        │       - artist page component
+        │       - artist page styles
+        │       - artist-related JS
+        │
+        └─► Other routes not loaded (smaller bundle)
+
+
+================================================================================
+                              END OF FLOW DIAGRAMS
+================================================================================

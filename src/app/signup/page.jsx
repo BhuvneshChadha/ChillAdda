@@ -10,6 +10,7 @@ import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { FaGoogle } from "react-icons/fa";
+import { backendFetch } from "@/services/backendApi";
 
 const page = () => {
   const { status } = useSession();
@@ -28,7 +29,7 @@ const page = () => {
     e.preventDefault();
     try {
       dispatch(setProgress(70));
-      const res = await fetch("/api/signup", {
+      const res = await backendFetch("/api/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

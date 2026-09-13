@@ -3,7 +3,6 @@ import "./globals.css";
 import MusicPlayer from "@/components/MusicPlayer";
 import Providers from "@/redux/Providers";
 import TopProgressBar from "@/components/topProgressBar/TopProgressBar";
-import Favicon from "./favicon.ico";
 import SongsHistory from "@/components/SongsHistory";
 import { Toaster } from "react-hot-toast";
 import AuthProvider from "./AuthProvider";
@@ -23,7 +22,11 @@ export const metadata = {
     "https://res.cloudinary.com/dbr73rpz9/image/upload/v1690380865/images/logo-color_noktgr.png",
   url: "https://chilladda.netlify.app/",
   type: "website",
-  icons: [{ rel: "icon", url: Favicon.src }],
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/favicon.ico",
+  },
   site_name: "ChillAdda",
   manifest: "/manifest.json",
 };

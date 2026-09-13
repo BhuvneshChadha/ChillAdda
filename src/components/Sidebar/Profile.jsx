@@ -47,7 +47,7 @@ const Profile = ({setShowNav}) => {
                     ):
                     (
                         <div className=' flex gap-4 ml-1'>
-                            <img src={data?.imageUrl || user?.imageUrl} alt='user' width={50} height={50} className='rounded-full' />
+                            <img src={data?.imageUrl || user?.imageUrl || "https://i.postimg.cc/LX4pgWYM/cb18a5e4-dd44-48f7-97c4-b46cde6f7c60.jpg"} alt='user' width={50} height={50} className='rounded-full' />
                             <div className='flex flex-col gap-1 w-full truncate'>
                                 <div className='flex justify-between items-center'>
                             <h1 className='text-lg font-semibold'>{data?.userName || user?.userName}</h1>

@@ -57,6 +57,14 @@ const Home = () => {
       afternoon: "ନମସ୍କାର",
       evening: "ଶୁଭ ସନ୍ଧ୍ୟା",
     },
+    bhojpuri: { common: "नमस्ते" },
+    bengali: { common: "নমস্কার" },
+    malayalam: { common: "നമസ്കാരം" },
+    kannada: { common: "ನಮಸ್ಕಾರ" },
+    marathi: { common: "नमस्कार" },
+    gujarati: { common: "નમસ્તે" },
+    urdu: { common: "السلام علیکم" },
+    assamese: { common: "নমস্কাৰ" },
   };
 
   function getSalutation(hour, languages) {
@@ -92,6 +100,11 @@ const Home = () => {
   let salutation = '';
   salutation = getSalutation(currentHour, languages);
 
+  let Language =
+  languages?.length >= 1
+    ? languages[0].charAt(0).toUpperCase() + languages[0].slice(1)
+    : "English";
+
   useEffect(() => {
     const fetchData = async () => {
       dispatch(setProgress(70))
@@ -113,7 +126,7 @@ const Home = () => {
       <ListenAgain />
 
       {/* trending */}
-      <SwiperLayout title={"Trending"} >
+      {(loading || data?.trending?.songs?.length || data?.trending?.albums?.length) ? <SwiperLayout title={"Trending"} >
         {
           loading ? (
             <SongCardSkeleton />
@@ -139,10 +152,10 @@ const Home = () => {
             </>
           )
         }
-      </SwiperLayout>
+      </SwiperLayout> : null}
 
       {/* top charts */}
-      <div className="my-4 lg:mt-14">
+      {(loading || data?.charts?.length) ? <div className="my-4 lg:mt-14">
         <h2 className=" text-white mt-4 text-2xl lg:text-3xl font-semibold mb-4 ">Top Charts</h2>
         <div className="grid lg:grid-cols-2 gap-x-10 max-h-96 lg:max-h-full lg:overflow-y-auto overflow-y-scroll">
           {
@@ -159,10 +172,10 @@ const Home = () => {
             )
           }
         </div>
-      </div>
+      </div> : null}
 
       {/* New Releases */}
-      <SwiperLayout title={"New Releases"}>
+      {(loading || data?.albums?.length) ? <SwiperLayout title={"New Releases"}>
         {
           loading ? (
             <SongCardSkeleton />
@@ -177,10 +190,10 @@ const Home = () => {
             )
           )
         }
-      </SwiperLayout>
+      </SwiperLayout> : null}
 
       {/* featured playlists */}
-      <SwiperLayout title={"Featured Playlists"}>
+      {(loading || data?.playlists?.length) ? <SwiperLayout title={"Featured Playlists"}>
         {
           loading ? (
             <SongCardSkeleton />
@@ -195,7 +208,39 @@ const Home = () => {
             )
           )
         }
-      </SwiperLayout>
+      </SwiperLayout> : null}
+
+      {/* Albums by language */}
+      {(loading || data?.languageAlbums?.length) ? <SwiperLayout title={`${Language} Albums`}>
+        {
+          loading ? (
+            <SongCardSkeleton />
+          ) : (
+            data?.languageAlbums?.map((album) => (
+              <SwiperSlide key={album?.id}>
+                <SongCard song={album} activeSong={activeSong} isPlaying={isPlaying} />
+              </SwiperSlide>
+            ))
+          )
+        }
+      </SwiperLayout> : null}
+
+      {/* Songs with lyrics */}
+      {languages?.some(
+  (lang) => lang?.toLowerCase() == "hindi"
+) &&(loading || data?.lyricsSongs?.length) ? <SwiperLayout title={"Lyrical Songs"}>
+        {
+          loading ? (
+            <SongCardSkeleton />
+          ) : (
+            data?.lyricsSongs?.map((song) => (
+              <SwiperSlide key={song?.id}>
+                <SongCard song={song} activeSong={activeSong} isPlaying={isPlaying} />
+              </SwiperSlide>
+            ))
+          )
+        }
+      </SwiperLayout> : null}
 
     </div>
   );

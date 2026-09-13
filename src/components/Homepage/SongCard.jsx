@@ -8,12 +8,12 @@ import {
   setActiveSong,
   setFullScreen,
 } from "../../redux/features/playerSlice";
-import { getRecommendedSongs, getSongData } from "@/services/dataAPI";
+import { getSongData } from "@/services/dataAPI";
 import { useSelector } from "react-redux";
 
 const SongCard = ({ song, isPlaying, activeSong }) => {
   const [loading, setLoading] = useState(false);
-  const { currentSongs, autoAdd } = useSelector((state) => state.player);
+  const { currentSongs } = useSelector((state) => state.player);
 
   const dispatch = useDispatch();
 
@@ -26,33 +26,25 @@ const SongCard = ({ song, isPlaying, activeSong }) => {
   const handlePlayClick = async () => {
     if (song?.type === "song") {
       setLoading(true);
-      const Data = await getSongData(song?.id);
-      const songData = await Data?.[0];
-      const recommendedSongs = await getRecommendedSongs(
-        songData?.primaryArtistsId,
-        songData?.id
-      );
-      // remove duplicate songs in recommendedSongs array and currentSongs array
-      const filteredRecommendedSongs =
-        recommendedSongs?.filter(
-          (song) => !currentSongs?.find((s) => s?.id === song?.id)
-        ) || [];
-      dispatch(
-        setActiveSong({
-          song: songData,
-          data: currentSongs?.find((s) => s?.id === songData?.id)
-            ? currentSongs
-            : autoAdd
-            ? [...currentSongs, songData, ...filteredRecommendedSongs]
-            : [...currentSongs, songData],
-          i: currentSongs?.find((s) => s?.id === songData?.id)
-            ? currentSongs?.findIndex((s) => s?.id === songData?.id)
-            : currentSongs?.length,
-        })
-      );
-      dispatch(setFullScreen(true));
-      dispatch(playPause(true));
-      setLoading(false);
+      try {
+        const songData = (await getSongData(song?.id))?.[0];
+        if (!songData) return;
+
+        const existingIndex = currentSongs?.findIndex(
+          (currentSong) => currentSong?.id === songData.id
+        );
+        dispatch(
+          setActiveSong({
+            song: songData,
+            data: existingIndex >= 0 ? currentSongs : [...currentSongs, songData],
+            i: existingIndex >= 0 ? existingIndex : currentSongs.length,
+          })
+        );
+        dispatch(setFullScreen(true));
+        dispatch(playPause(true));
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -121,7 +113,8 @@ const SongCard = ({ song, isPlaying, activeSong }) => {
           </p>
           <p className="text-[9px] lg:text-xs truncate text-gray-300 mt-1">
             {song?.artists?.primary?.map((artist) => artist?.name).join(", ") ||
-              song?.artists?.map((artist) => artist?.name).join(", ") ||
+              (Array.isArray(song?.artists) &&
+                song.artists.map((artist) => artist?.name).join(", ")) ||
               (song?.subtitle != "JioSaavn" && song?.subtitle)}
           </p>
         </div>

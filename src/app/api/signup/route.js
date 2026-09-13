@@ -44,7 +44,12 @@ export async function POST(request) {
             {
                 success: true,
                 message: "User created successfully",
-                data: result
+                data: {
+                    id: result._id,
+                    userName: result.userName,
+                    email: result.email,
+                    imageUrl: result.imageUrl
+                }
             }
         );
     } catch (e) {

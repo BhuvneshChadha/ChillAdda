@@ -3,7 +3,7 @@ import React from 'react'
 import Image from 'next/image'
 import Searchbar from './Searchbar'
 import Link from 'next/link'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { setProgress } from '@/redux/features/loadingBarSlice'
 import { MdOutlineMenu } from 'react-icons/md'
 import { IoClose } from 'react-icons/io5'
@@ -11,6 +11,7 @@ import Sidebar from './Sidebar/Sidebar'
 
 const Navbar = () => {
   const dispatch = useDispatch();
+  const fullScreen = useSelector((state) => state.player.fullScreen);
   const [showNav, setShowNav] = React.useState(false);
 
   return (
@@ -46,7 +47,7 @@ const Navbar = () => {
           </div>
 
           {/* Right: Searchbar */}
-          <Searchbar />
+          {!fullScreen && <Searchbar />}
         </div>
 
         {/* Mobile layout */}
@@ -73,7 +74,7 @@ const Navbar = () => {
                 </Link>
               </div>
             </div>
-            <Searchbar />
+            {!fullScreen && <Searchbar />}
           </div>
 
           {/* Bottom row: Bhuvi line */}

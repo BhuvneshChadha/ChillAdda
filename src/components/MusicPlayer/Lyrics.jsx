@@ -17,15 +17,14 @@ const Lyrics = ({ activeSong }) => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const res = await getlyricsData(activeSong?.name);
+      const res = await getlyricsData(activeSong?.name, activeSong);
       setLyrics(res);
       setLoading(false);
     };
     if (activeSong?.id) fetchData();
-  }, [activeSong?.id]);
+  }, [activeSong?.id, activeSong?.seokey]);
 
   const handleAutoAdd = (checked) => {
-    console.log(autoAdd);
     if (checked) {
       dispatch(setAutoAdd(true));
       localStorage.setItem("autoAdd", true);

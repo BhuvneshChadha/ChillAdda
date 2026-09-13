@@ -18,7 +18,14 @@ const Languages = () => {
     { id: "tamil", label: "Tamil" },
     { id: "telugu", label: "Telugu" },
     { id: "odia", label: "Odia" },
-    // Add more languages as needed
+    { id: "bhojpuri", label: "Bhojpuri" },
+    { id: "bengali", label: "Bengali" },
+    { id: "malayalam", label: "Malayalam" },
+    { id: "kannada", label: "Kannada" },
+    { id: "marathi", label: "Marathi" },
+    { id: "gujarati", label: "Gujarati" },
+    { id: "urdu", label: "Urdu" },
+    { id: "assamese", label: "Assamese" },
   ];
 
   const handleLanguageChange = (event) => {

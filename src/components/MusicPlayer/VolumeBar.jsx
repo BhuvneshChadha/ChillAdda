@@ -15,7 +15,6 @@ const VolumeBar = ({
   onChange,
   setVolume,
   activeSong,
-  bgColor,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [playlists, setPlaylists] = useState([]);
@@ -60,9 +59,7 @@ const VolumeBar = ({
               }}
               className="absolute text-white bottom-[130%] backdrop-blur-lg rounded-lg p-3 w-32 flex flex-col gap-2 z-[100]"
               style={{
-                backgroundColor: bgColor
-                  ? `rgba(${bgColor.red}, ${bgColor.green}, ${bgColor.blue}, 0.3)`
-                  : "rgba(0,0,0,0.2)",
+                backgroundColor: "rgba(0,0,0,0.2)",
                 backdropFilter: "blur(20px)",
               }}
             >

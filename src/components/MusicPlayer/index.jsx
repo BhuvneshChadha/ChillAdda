@@ -20,8 +20,6 @@ import { addFavourite, getFavourite } from "@/services/dataAPI";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import FavouriteButton from "./FavouriteButton";
-import getPixels from "get-pixels";
-import { extractColors } from "extract-colors";
 
 const MusicPlayer = () => {
   const {
@@ -44,7 +42,6 @@ const MusicPlayer = () => {
   const dispatch = useDispatch();
   const { status } = useSession();
   const router = useRouter();
-  const [bgColor, setBgColor] = useState();
 
   useEffect(() => {
     if (currentSongs?.length) dispatch(playPause(true));
@@ -65,29 +62,11 @@ const MusicPlayer = () => {
       }
     };
     fetchFavourites();
-    // set ambient background
-    const src = activeSong?.image?.[1]?.url;
+  }, []);
 
-    if (src) {
-      getPixels(src, (err, pixels) => {
-        if (!err) {
-          const data = [...pixels.data];
-          const width = Math.round(Math.sqrt(data.length / 4));
-          const height = width;
-
-          extractColors({ data, width, height })
-            .then((colors) => {
-              setBgColor(colors[0]);
-            })
-            .catch(console.log);
-        }
-      });
-    }
-    // change page title to song name
-    if (activeSong?.name) {
-      document.title = activeSong?.name;
-    }
-  }, [activeSong]);
+  useEffect(() => {
+    if (activeSong?.name) document.title = activeSong.name;
+  }, [activeSong?.name]);
 
   // off scroll when full screen
   useEffect(() => {
@@ -188,9 +167,7 @@ const MusicPlayer = () => {
         }
       }}
       style={{
-        backgroundColor: bgColor
-          ? `rgba(${bgColor.red}, ${bgColor.green}, ${bgColor.blue}, 0.2)`
-          : "rgba(0,0,0,0.2)",
+        backgroundColor: "rgba(0,0,0,0.2)",
       }}
     >
       <HiOutlineChevronDown
@@ -277,7 +254,6 @@ const MusicPlayer = () => {
         </div>
         <VolumeBar
           activeSong={activeSong}
-          bgColor={bgColor}
           fullScreen={fullScreen}
           value={volume}
           min="0"
