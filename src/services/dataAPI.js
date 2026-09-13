@@ -48,11 +48,18 @@ async function tryProviders(primary, legacy, isValid) {
 }
 
 const imageUrl = (value) => {
-  if (typeof value === "string" && value) return value;
+  const secureUrl = (url) =>
+    typeof url === "string" && url
+      ? url.replace(/^http:\/\//i, "https://")
+      : null;
+
+  if (typeof value === "string" && value) return secureUrl(value);
   if (Array.isArray(value)) {
     return (
       value
-        .map((item) => (typeof item === "string" ? item : item?.url || item?.link))
+        .map((item) =>
+          secureUrl(typeof item === "string" ? item : item?.url || item?.link)
+        )
         .find(Boolean) || FALLBACK_IMAGE
     );
   }
