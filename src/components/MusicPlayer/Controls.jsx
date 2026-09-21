@@ -106,7 +106,8 @@ const Controls = ({
         }}
         className={`${!fullScreen ? "hidden sm:block" : "m-3"} cursor-pointer`}
       />
-      {/^\d+$/.test(String(activeSong?.trackId || activeSong?.id || "")) && (
+      {(activeSong?.provider === "legacy" ||
+        /^\d+$/.test(String(activeSong?.trackId || activeSong?.id || ""))) && (
         <div className=" hidden sm:block mt-1 ">
           <Downloader activeSong={activeSong} fullScreen={fullScreen} />
         </div>

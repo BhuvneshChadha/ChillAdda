@@ -8,8 +8,14 @@ import { toast } from "react-hot-toast";
 const Downloader = ({ activeSong, icon }) => {
   const { percentage, isInProgress, download } = useDownloader();
   const [loading, setLoading] = React.useState(false);
+  const isLegacy = activeSong?.provider === "legacy";
   const trackId = activeSong?.trackId || activeSong?.id;
-  const canDownload = /^\d+$/.test(String(trackId || ""));
+  const directUrl = activeSong?.downloadUrl?.[4]?.url ||
+    activeSong?.downloadUrl?.[0]?.url ||
+    activeSong?.streamUrl;
+  const canDownload = isLegacy
+    ? Boolean(directUrl)
+    : /^\d+$/.test(String(trackId || ""));
   const apiUrl = (process.env.NEXT_PUBLIC_GAANA_API || "").replace(/\/$/, "");
   const filename = `${activeSong?.name
     ?.replace("&#039;", "'")
@@ -26,7 +32,9 @@ const Downloader = ({ activeSong, icon }) => {
         setLoading(true);
         try {
           const response = await fetch(
-            `${apiUrl}/api/download/${encodeURIComponent(trackId)}?name=${encodeURIComponent(activeSong?.name || "song")}`
+            isLegacy
+              ? directUrl
+              : `${apiUrl}/api/download/${encodeURIComponent(trackId)}?name=${encodeURIComponent(activeSong?.name || "song")}`
           );
           if (!response.ok) {
             const body = await response.json().catch(() => null);
@@ -45,16 +53,18 @@ const Downloader = ({ activeSong, icon }) => {
           setLoading(false);
         }
       }}
-      className={`flex  mb-1 cursor-pointer w-7`}
+      className={`flex items-center justify-center mb-1 cursor-pointer w-8 min-w-8`}
     >
       <div
         title={loading || isInProgress ? "Downloading" : "Download"}
         className={
-          loading || isInProgress ? "download-button flex justify-center items-center" : ""
+          loading || isInProgress
+            ? "download-button flex min-w-8 justify-center items-center px-1"
+            : ""
         }
       >
         {loading || isInProgress ? (
-          <div className=" text-white font-extrabold text-xs m-">
+          <div className="text-white font-extrabold text-xs whitespace-nowrap">
             {percentage}
           </div>
         ) : icon === 2 ? (
