@@ -31,10 +31,12 @@ const Navbar = () => {
                   onClick={() => {
                     dispatch(setProgress(100))
                   }}
-                  src="https://i.postimg.cc/JzRDY6Zs/7ebf878e-db5f-452b-ad9b-0869ace84630.jpg"
+                  src="/logo.png"
                   alt="bhuvi"
                   width={190}
                   height={58}
+                  priority
+                  unoptimized
                   className="lg:py-2 aspect-video w-[135px] h-[30.741px] lg:h-[58px] lg:w-[190px]"
                 />
               </Link>
@@ -65,10 +67,12 @@ const Navbar = () => {
                     onClick={() => {
                       dispatch(setProgress(100))
                     }}
-                    src="https://i.postimg.cc/JzRDY6Zs/7ebf878e-db5f-452b-ad9b-0869ace84630.jpg"
+                    src="/logo.png"
                     alt="bhuvi"
                     width={135}
                     height={30}
+                    priority
+                    unoptimized
                     className="lg:py-2 aspect-video w-[135px] h-[30.741px]"
                   />
                 </Link>

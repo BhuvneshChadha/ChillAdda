@@ -14,11 +14,17 @@ const Track = ({ isPlaying, isActive, activeSong, fullScreen }) => (
     >
       <img
         src={
-          activeSong?.image?.[2].url ||
-          "https://i.postimg.cc/LX4pgWYM/cb18a5e4-dd44-48f7-97c4-b46cde6f7c60.jpg"
+          activeSong?.image?.[2]?.url ||
+          "/icon-512x512.png"
         }
         alt="cover art"
-        className="rounded-full"
+        loading="eager"
+        decoding="async"
+        onError={(event) => {
+          event.currentTarget.src =
+            "/icon-512x512.png";
+        }}
+        className="h-full w-full rounded-full object-cover"
       />
     </div>
     <div className={`w-[190px] select-none cursor-pointer`}>

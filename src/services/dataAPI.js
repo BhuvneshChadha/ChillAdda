@@ -1,7 +1,7 @@
 const GAANA_API = (process.env.NEXT_PUBLIC_GAANA_API || "").replace(/\/$/, "");
 const LEGACY_API = (process.env.NEXT_PUBLIC_SAAVN_API || "").replace(/\/$/, "");
 const FALLBACK_IMAGE =
-  "https://i.postimg.cc/LX4pgWYM/cb18a5e4-dd44-48f7-97c4-b46cde6f7c60.jpg";
+  "/icon-512x512.png";
 const streamCache = new Map();
 
 const isObject = (value) => value !== null && typeof value === "object";
@@ -83,6 +83,9 @@ const artistsFrom = (value) => {
         name: decodeHtml(artist?.name || ""),
       }))
       .filter((artist) => artist.name);
+  }
+  if (isObject(value)) {
+    return artistsFrom(value.primary || value.all || value.featured || []);
   }
   return String(value || "")
     .split(",")
@@ -242,6 +245,39 @@ const normalizeSearch = (raw) => {
   };
 };
 
+const normalizeLegacySearch = (raw) => {
+  const value = raw || {};
+  const normalizeResults = (items, normalizer) =>
+    (Array.isArray(items) ? items : []).map(normalizer).filter(Boolean);
+
+  return {
+    songs: {
+      results: normalizeResults(
+        value.songs?.results || value.songs,
+        (song) => normalizeSong(song, "legacy")
+      ),
+    },
+    albums: {
+      results: normalizeResults(
+        value.albums?.results || value.albums,
+        (album) => normalizeAlbum({ ...album, provider: "legacy" })
+      ),
+    },
+    playlists: {
+      results: normalizeResults(
+        value.playlists?.results || value.playlists,
+        (playlist) => normalizePlaylist({ ...playlist, provider: "legacy" })
+      ),
+    },
+    artists: {
+      results: normalizeResults(
+        value.artists?.results || value.artists,
+        (artist) => normalizeArtist({ ...artist, provider: "legacy" })
+      ),
+    },
+  };
+};
+
 const gaana = (path) => `${GAANA_API}/api${path}`;
 const legacy = (path) => `${LEGACY_API}/api${path}`;
 
@@ -310,7 +346,7 @@ export async function homePageData(language = []) {
         playlists: chartsData,
       };
     },
-    () => legacyData(`/modules?language=${encodeURIComponent(lang)}`),
+    () => legacyData(`/modules?language=${encodeURIComponent(languages[0])}`),
     (value) =>
       isObject(value) &&
       (isNonEmptyArray(value?.trending?.songs) ||
@@ -347,14 +383,23 @@ export async function getSongData(id) {
   return [song];
 }
 
-export async function resolveSongStream(song) {
-  if (song?.streamUrl) return song.streamUrl;
+export async function resolveSongStream(song, quality = "high") {
+  if (song?.streamUrl && song?.provider !== "gaana") return song.streamUrl;
   if (song?.provider === "gaana" && song.trackId) {
-    const cacheKey = String(song.trackId);
+    const selectedQuality = ["low", "medium", "high"].includes(quality)
+      ? quality
+      : "high";
+    const cacheKey = `${song.trackId}:${selectedQuality}`;
     if (streamCache.has(cacheKey)) return streamCache.get(cacheKey);
 
     try {
-      const stream = unwrapGaana(await requestJson(gaana(`/stream/${encodeURIComponent(song.trackId)}?quality=high`)));
+      const stream = unwrapGaana(
+        await requestJson(
+          gaana(
+            `/stream/${encodeURIComponent(song.trackId)}?quality=${selectedQuality}`
+          )
+        )
+      );
       const url = stream?.hlsUrl || stream?.url;
       if (typeof url === "string" && url) {
         streamCache.set(cacheKey, url);
@@ -441,6 +486,19 @@ export async function getArtistAlbums(id, page = 0) {
 }
 
 export async function getSearchedData(query) {
+  return getSearchedDataByProvider(query, "gaana");
+}
+
+export async function getSearchedDataByProvider(query, provider = "gaana") {
+  if (provider === "legacy") {
+    const result = await tryProviders(
+      async () => normalizeLegacySearch(await legacyData(`/search?query=${encodeURIComponent(query)}`)),
+      async () => null,
+      (value) => isNonEmptyArray(value?.songs?.results)
+    );
+    return result || { songs: { results: [] }, albums: { results: [] }, artists: { results: [] }, playlists: { results: [] } };
+  }
+
   const result = await tryProviders(
     async () => {
       return normalizeSearch(await requestJson(gaana(`/search?q=${encodeURIComponent(query)}&limit=20`)));
@@ -454,6 +512,68 @@ export async function getSearchedData(query) {
         isNonEmptyArray(value?.playlists?.results))
   );
   return result || { songs: { results: [] }, albums: { results: [] }, artists: { results: [] }, playlists: { results: [] } };
+}
+
+export async function getSongDataByProvider(id, provider = "gaana") {
+  if (provider === "legacy") {
+    const songs = await legacyData(`/songs/${encodeURIComponent(id)}`);
+    const song = Array.isArray(songs) ? songs[0] : songs;
+    const normalized = song ? normalizeSong(song, "legacy") : null;
+    return normalized ? [normalized] : [];
+  }
+  const song = normalizeSong(await gaanaData(`/songs/${encodeURIComponent(id)}`));
+  if (!song) return [];
+  const stream = await resolveSongStream(song);
+  if (stream) {
+    song.streamUrl = stream;
+    song.downloadUrl = [{ url: stream }];
+  }
+  return [song];
+}
+
+export async function switchSongSource(song, provider) {
+  const results = await getSearchedDataByProvider(song?.name, provider);
+  const match = results?.songs?.results?.[0];
+  console.debug("[ChillAdda] source switch search", {
+    from: song?.provider,
+    to: provider,
+    query: song?.name,
+    matchId: match?.id,
+  });
+  if (!match) return null;
+
+  const fallback = normalizeSong(match, provider);
+  try {
+    const hydrated = await getSongDataByProvider(match.id, provider);
+    const replacement = hydrated?.[0] || fallback;
+    if (!replacement) return null;
+
+    if (provider === "gaana") {
+      const stream = await resolveSongStream(replacement);
+      if (!stream) return null;
+      replacement.streamUrl = stream;
+    } else {
+      const directUrl =
+        replacement.streamUrl ||
+        replacement.downloadUrl?.[4]?.url ||
+        replacement.downloadUrl?.[0]?.url;
+      if (!directUrl) return null;
+      replacement.streamUrl = directUrl;
+    }
+    console.debug("[ChillAdda] source switch ready", {
+      provider,
+      id: replacement.id,
+      stream: replacement.streamUrl,
+    });
+    return replacement;
+  } catch {
+    if (!fallback) return null;
+    const directUrl =
+      fallback.streamUrl ||
+      fallback.downloadUrl?.[4]?.url ||
+      fallback.downloadUrl?.[0]?.url;
+    return provider === "legacy" && directUrl ? { ...fallback, streamUrl: directUrl } : null;
+  }
 }
 
 export async function getSearchSuggestions(query) {

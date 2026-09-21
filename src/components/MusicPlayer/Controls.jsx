@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { MdSkipNext, MdSkipPrevious } from "react-icons/md";
+import { MdSkipNext, MdSkipPrevious, MdSwapHoriz } from "react-icons/md";
 import { BsFillPauseFill, BsFillPlayFill } from "react-icons/bs";
 import { TbRepeat, TbRepeatOnce, TbArrowsShuffle } from "react-icons/tb";
 import Downloader from "./Downloader";
@@ -21,6 +21,10 @@ const Controls = ({
   handleAddToFavourite,
   favouriteSongs,
   loading,
+  onSwitchSource,
+  sourceSwitching,
+  quality,
+  onQualityChange,
 }) => {
   return (
     <div className="flex items-center justify-around md:w-80 text-lg lg:w-80 2xl:w-80 gap-4 sm:gap-0">
@@ -106,6 +110,40 @@ const Controls = ({
         <div className=" hidden sm:block mt-1 ">
           <Downloader activeSong={activeSong} fullScreen={fullScreen} />
         </div>
+      )}
+      {activeSong?.name && (
+        <button
+          type="button"
+          title={`Switch to ${activeSong.provider === "legacy" ? "Gaana" : "JioSaavn"}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            onSwitchSource?.();
+          }}
+          disabled={sourceSwitching}
+          className="flex items-center gap-1 text-xs text-white hover:text-[#00e6e6] disabled:opacity-50"
+        >
+          <MdSwapHoriz size={24} />
+          {/* <span className="hidden sm:inline">
+            {sourceSwitching
+              ? "Loading"
+              : activeSong.provider === "legacy"
+                ? "Gaana"
+                : "JioSaavn"}
+          </span> */}
+        </button>
+      )}
+      {activeSong?.provider !== "legacy" && (
+        <select
+          aria-label="Audio quality"
+          title="Audio quality"
+          value={quality}
+          onChange={(event) => onQualityChange?.(event.target.value)}
+          className="hidden sm:block bg-transparent text-xs text-white outline-none"
+        >
+          <option value="high" className="bg-black">High</option>
+          <option value="medium" className="bg-black">Medium</option>
+          <option value="low" className="bg-black">Low</option>
+        </select>
       )}
     </div>
   );

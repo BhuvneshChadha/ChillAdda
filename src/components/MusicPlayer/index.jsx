@@ -5,7 +5,9 @@ import {
   nextSong,
   prevSong,
   playPause,
+  setActiveSong,
   setFullScreen,
+  setQuality,
 } from "../../redux/features/playerSlice";
 import Controls from "./Controls";
 import Player from "./Player";
@@ -16,7 +18,8 @@ import FullscreenTrack from "./FullscreenTrack";
 import Lyrics from "./Lyrics";
 import Downloader from "./Downloader";
 import { HiOutlineChevronDown } from "react-icons/hi";
-import { addFavourite, getFavourite } from "@/services/dataAPI";
+import { addFavourite, getFavourite, switchSongSource } from "@/services/dataAPI";
+import { toast } from "react-hot-toast";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import FavouriteButton from "./FavouriteButton";
@@ -29,6 +32,7 @@ const MusicPlayer = () => {
     isActive,
     isPlaying,
     fullScreen,
+    quality,
   } = useSelector((state) => state.player);
   const { isTyping } = useSelector((state) => state.loadingBar);
   const [duration, setDuration] = useState(0);
@@ -39,9 +43,21 @@ const MusicPlayer = () => {
   const [shuffle, setShuffle] = useState(false);
   const [favouriteSongs, setFavouriteSongs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [sourceSwitching, setSourceSwitching] = useState(false);
+  const [queueProvider, setQueueProvider] = useState(null);
   const dispatch = useDispatch();
   const { status } = useSession();
   const router = useRouter();
+
+  useEffect(() => {
+    const savedQuality = window.localStorage.getItem("chilladda-audio-quality");
+    if (savedQuality) dispatch(setQuality(savedQuality));
+  }, [dispatch]);
+
+  const handleQualityChange = (value) => {
+    dispatch(setQuality(value));
+    window.localStorage.setItem("chilladda-audio-quality", value);
+  };
 
   useEffect(() => {
     if (currentSongs?.length) dispatch(playPause(true));
@@ -67,6 +83,12 @@ const MusicPlayer = () => {
   useEffect(() => {
     if (activeSong?.name) document.title = activeSong.name;
   }, [activeSong?.name]);
+
+  useEffect(() => {
+    if (!activeSong?.id) return;
+    setSeekTime(0);
+    setAppTime(0);
+  }, [activeSong?.id, activeSong?.provider, activeSong?.trackId, activeSong?.sourceKey]);
 
   // off scroll when full screen
   useEffect(() => {
@@ -105,19 +127,34 @@ const MusicPlayer = () => {
     }
   };
 
-  const handleNextSong = (e) => {
+  const handleNextSong = async (e) => {
     e?.stopPropagation();
     dispatch(playPause(false));
+    setSeekTime(0);
 
-    if (!shuffle) {
-      dispatch(nextSong((currentIndex + 1) % currentSongs.length));
-    } else {
-      dispatch(nextSong(Math.floor(Math.random() * currentSongs.length)));
+    const nextIndex = !shuffle
+      ? (currentIndex + 1) % currentSongs.length
+      : Math.floor(Math.random() * currentSongs.length);
+    const queuedSong = currentSongs[nextIndex];
+
+    if (queueProvider && queuedSong?.provider !== queueProvider) {
+      try {
+        const replacement = await switchSongSource(queuedSong, queueProvider);
+        if (replacement) {
+          dispatch(setActiveSong({ song: replacement, data: currentSongs, i: nextIndex }));
+          dispatch(playPause(true));
+          return;
+        }
+      } catch {
+        // Fall back to the original playlist item when the alternate source is unavailable.
+      }
     }
+    dispatch(nextSong(nextIndex));
   };
 
   const handlePrevSong = (e) => {
     e?.stopPropagation();
+    setSeekTime(0);
     if (currentIndex === 0) {
       dispatch(prevSong(currentSongs.length - 1));
     } else if (shuffle) {
@@ -153,6 +190,42 @@ const MusicPlayer = () => {
         setLoading(false);
         console.log("add to fav error", error);
       }
+    }
+  };
+
+  const handleSwitchSource = async () => {
+    if (sourceSwitching || !activeSong?.name) return;
+    const target = activeSong.provider === "legacy" ? "gaana" : "legacy";
+    const wasPlaying = isPlaying;
+    setSourceSwitching(true);
+    dispatch(playPause(false));
+    try {
+      const replacement = await switchSongSource(activeSong, target);
+      if (!replacement) {
+        toast.error(`No ${target === "gaana" ? "Gaana" : "JioSaavn"} result found`);
+        dispatch(playPause(wasPlaying));
+        return;
+      }
+      setQueueProvider(target);
+      setSeekTime(0);
+      dispatch(
+        setActiveSong({
+          song: { ...replacement, sourceKey: `${target}:${Date.now()}` },
+          data: currentSongs,
+          i: currentIndex,
+        })
+      );
+      dispatch(playPause(true));
+    } catch (error) {
+      console.error("Source switch failed", {
+        target,
+        activeSong,
+        error,
+      });
+      toast.error("Unable to switch music source");
+      dispatch(playPause(wasPlaying));
+    } finally {
+      setSourceSwitching(false);
     }
   };
 
@@ -225,6 +298,10 @@ const MusicPlayer = () => {
             handleAddToFavourite={handleAddToFavourite}
             favouriteSongs={favouriteSongs}
             loading={loading}
+            onSwitchSource={handleSwitchSource}
+            sourceSwitching={sourceSwitching}
+            quality={quality}
+            onQualityChange={handleQualityChange}
           />
           <Seekbar
             value={appTime}
@@ -236,6 +313,7 @@ const MusicPlayer = () => {
             appTime={appTime}
           />
           <Player
+            key={`${activeSong?.sourceKey || ""}:${activeSong?.provider || "unknown"}:${activeSong?.id || "none"}:${activeSong?.trackId || ""}`}
             activeSong={activeSong}
             volume={volume}
             isPlaying={isPlaying}
@@ -250,6 +328,7 @@ const MusicPlayer = () => {
             onLoadedData={(event) => setDuration(event.target.duration)}
             appTime={appTime}
             setSeekTime={setSeekTime}
+            quality={quality}
           />
         </div>
         <VolumeBar

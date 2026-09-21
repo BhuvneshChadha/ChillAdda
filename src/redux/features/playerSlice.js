@@ -8,6 +8,7 @@ const initialState = {
   activeSong: {},
   fullScreen: false,
   autoAdd: false,
+  quality: 'high',
 };
 
 const playerSlice = createSlice({
@@ -23,7 +24,7 @@ const playerSlice = createSlice({
       state.currentSongs = action.payload.data;
       }
 
-      if(action.payload.i){
+      if(action.payload.i !== undefined){
       state.currentIndex = action.payload.i;
       }
       state.isActive = true;
@@ -58,11 +59,25 @@ const playerSlice = createSlice({
 
     setAutoAdd: (state, action) => {
       state.autoAdd = action.payload;
-    }
+    },
+
+    setQuality: (state, action) => {
+      if (['low', 'medium', 'high'].includes(action.payload)) {
+        state.quality = action.payload;
+      }
+    },
    
   },
 });
 
-export const { setActiveSong, nextSong, prevSong, playPause, setFullScreen, setAutoAdd } = playerSlice.actions;
+export const {
+  setActiveSong,
+  nextSong,
+  prevSong,
+  playPause,
+  setFullScreen,
+  setAutoAdd,
+  setQuality,
+} = playerSlice.actions;
 
 export default playerSlice.reducer;

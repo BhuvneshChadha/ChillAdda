@@ -33,9 +33,18 @@ const FullscreenTrack = ({
           className=" h-80 w-80 lg:h-[500px] lg:w-[500px] sm:mt-5 mt-28 "
         >
           <img
-            src={activeSong?.image?.[2].url}
+            src={
+              activeSong?.image?.[2]?.url ||
+              "/icon-512x512.png"
+            }
             alt="cover art"
-            className="rounded-2xl"
+            loading="eager"
+            decoding="async"
+            onError={(event) => {
+              event.currentTarget.src =
+                "/icon-512x512.png";
+            }}
+            className="h-full w-full rounded-2xl object-cover"
           />
         </div>
         <div

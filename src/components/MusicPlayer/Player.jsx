@@ -18,10 +18,16 @@ const Player = ({
   handleNextSong,
   setSeekTime,
   appTime,
+  quality,
 }) => {
   const ref = useRef(null);
   const hlsRef = useRef(null);
+  const isPlayingRef = useRef(isPlaying);
   const [source, setSource] = React.useState("");
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
 
   // media session metadata:
   const mediaMetaData = activeSong?.name
@@ -85,22 +91,36 @@ const Player = ({
   useEffect(() => {
     let cancelled = false;
     const loadSource = async () => {
-      const stream = await resolveSongStream(activeSong);
-      if (cancelled) return;
-      setSource(stream);
-      if (!ref.current || !stream) return;
-
+      const audio = ref.current;
+      if (audio) {
+        audio.pause();
+        audio.removeAttribute("src");
+        audio.load();
+      }
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
+      const stream = await resolveSongStream(activeSong, quality);
+      if (cancelled) return;
+      setSource(stream);
+      if (!ref.current || !stream) return;
 
-      const audio = ref.current;
       const canPlayHls = audio.canPlayType("application/vnd.apple.mpegurl");
+      const isHlsStream = /\.m3u8(?:$|\?)/i.test(stream);
+      const playWhenReady = () => {
+        if (!cancelled && isPlayingRef.current) {
+          audio.play().catch(() => {});
+        }
+      };
 
-      if (canPlayHls) {
+      if (canPlayHls || !isHlsStream) {
+        audio.oncanplay = playWhenReady;
         audio.src = stream;
         audio.load();
+        if (audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+          playWhenReady();
+        }
       } else {
         if (cancelled) return;
         if (!Hls.isSupported()) {
@@ -112,7 +132,7 @@ const Player = ({
         hls.loadSource(stream);
         hls.attachMedia(audio);
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          if (isPlaying) audio.play().catch(() => {});
+          playWhenReady();
         });
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (data.fatal) {
@@ -124,7 +144,7 @@ const Player = ({
         return;
       }
 
-      if (isPlaying) audio.play().catch(() => {});
+      playWhenReady();
     };
     if (activeSong?.id) loadSource();
     else {
@@ -140,12 +160,23 @@ const Player = ({
     }
     return () => {
       cancelled = true;
+      if (ref.current) {
+        ref.current.oncanplay = null;
+      }
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
     };
-  }, [activeSong?.id, activeSong?.trackId, activeSong?.streamUrl]);
+  }, [
+    activeSong?.id,
+    activeSong?.trackId,
+    activeSong?.provider,
+    activeSong?.sourceKey,
+    activeSong?.streamUrl,
+    activeSong?.downloadUrl,
+    quality,
+  ]);
 
   useEffect(() => {
     if (!ref.current) return;

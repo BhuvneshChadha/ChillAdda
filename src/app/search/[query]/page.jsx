@@ -1,7 +1,7 @@
 "use client";
 import SwiperLayout from "@/components/Homepage/Swiper";
 import SongCard from "@/components/Homepage/SongCard";
-import { getSearchedData, getSongData } from "@/services/dataAPI";
+import { getSearchedDataByProvider, getSongDataByProvider } from "@/services/dataAPI";
 import React, { useEffect } from "react";
 import { useState } from "react";
 import { useSelector } from "react-redux";
@@ -22,22 +22,24 @@ const page = ({ params }) => {
   const [query, setQuery] = useState(params.query);
   const [searchedData, setSearchedData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [provider, setProvider] = useState("gaana");
   const { currentSongs } = useSelector((state) => state.player);
 
   useEffect(() => {
     const fetchData = async () => {
       dispatch(setProgress(70));
-      const response = await getSearchedData(query);
+      setLoading(true);
+      const response = await getSearchedDataByProvider(query, provider);
       setSearchedData(response);
       setLoading(false);
       dispatch(setProgress(100));
     };
     fetchData();
-  }, [query]);
+  }, [query, provider]);
 
   const handlePlayClick = async (song) => {
     if (song?.type === "song") {
-      const Data = await getSongData(song?.id);
+      const Data = await getSongDataByProvider(song?.id, song?.provider);
       const songData = await Data?.[0];
       dispatch(
         setActiveSong({
@@ -62,6 +64,22 @@ const page = ({ params }) => {
           <h1 className="text-3xl font-bold">
             Search results for "{query.replaceAll("%20", " ")}"
           </h1>
+          <div className="mt-5 flex gap-2">
+            {["gaana", "legacy"].map((source) => (
+              <button
+                key={source}
+                type="button"
+                onClick={() => setProvider(source)}
+                className={`rounded-full border px-4 py-2 text-sm ${
+                  provider === source
+                    ? "border-cyan-400 bg-cyan-400/20 text-cyan-300"
+                    : "border-white/30 text-gray-300"
+                }`}
+              >
+                {source === "gaana" ? "Gaana" : "JioSaavn"}
+              </button>
+            ))}
+          </div>
           <div className="mt-10 text-gray-200">
             <h2 className="text-lg lg:text-4xl font-semibold">Songs</h2>
             {searchedData && searchedData?.songs?.results?.length > 0 ? (
