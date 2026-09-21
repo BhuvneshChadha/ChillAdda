@@ -255,14 +255,18 @@ async function legacyData(path, options) {
 }
 
 export async function homePageData(language = []) {
-  const lang = Array.isArray(language) && language.length ? language[0] : "en";
+  const languages = Array.isArray(language) && language.length ? language : ["en"];
   const result = await tryProviders(
     async () => {
-      const [trending, charts, releases, albumList, lyricsList] = await Promise.allSettled([
-        gaanaData(`/trending?language=${encodeURIComponent(lang)}&limit=20`),
+      const [trending, charts, releases, albumLists, lyricsList] = await Promise.allSettled([
+        gaanaData(`/trending?language=${encodeURIComponent(languages[0])}&limit=20`),
         gaanaData("/charts?limit=10"),
-        gaanaData(`/new-releases?language=${encodeURIComponent(lang)}&limit=20`),
-        gaanaData(`/album-list?language=${encodeURIComponent(lang)}&page=0`),
+        gaanaData(`/new-releases?language=${encodeURIComponent(languages[0])}&limit=20`),
+        Promise.allSettled(
+          languages.map((lang) =>
+            gaanaData(`/album-list?language=${encodeURIComponent(lang)}&page=0`)
+          )
+        ),
         gaanaData("/lyrics?page=0"),
       ]);
       const songs = (trending.status === "fulfilled" ? trending.value?.tracks || trending.value : [])
@@ -279,9 +283,19 @@ export async function homePageData(language = []) {
         .filter((item) => item?.type !== "album")
         .map(normalizeSong)
         .filter(Boolean);
-      const languageAlbums = (albumList.status === "fulfilled" ? albumList.value : [])
-        .map(normalizeAlbumListItem)
-        .filter(Boolean);
+      const languageAlbumsByLanguage =
+        albumLists.status === "fulfilled"
+          ? albumLists.value.map((response, index) => ({
+              language: languages[index],
+              albums:
+                response.status === "fulfilled" && Array.isArray(response.value)
+                  ? response.value.map(normalizeAlbumListItem).filter(Boolean)
+                  : [],
+            }))
+          : [];
+      const languageAlbums = languageAlbumsByLanguage.flatMap(
+        (entry) => entry.albums
+      );
       const lyricsSongs = (lyricsList.status === "fulfilled" ? lyricsList.value : [])
         .map(normalizeLyricsSong)
         .filter(Boolean);
@@ -291,6 +305,7 @@ export async function homePageData(language = []) {
         charts: chartsData,
         albums,
         languageAlbums,
+        languageAlbumsByLanguage,
         lyricsSongs,
         playlists: chartsData,
       };
@@ -308,6 +323,7 @@ export async function homePageData(language = []) {
     charts: [],
     albums: [],
     languageAlbums: [],
+    languageAlbumsByLanguage: [],
     lyricsSongs: [],
     playlists: [],
   };

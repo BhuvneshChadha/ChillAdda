@@ -100,11 +100,6 @@ const Home = () => {
   let salutation = '';
   salutation = getSalutation(currentHour, languages);
 
-  let Language =
-  languages?.length >= 1
-    ? languages[0].charAt(0).toUpperCase() + languages[0].slice(1)
-    : "English";
-
   useEffect(() => {
     const fetchData = async () => {
       dispatch(setProgress(70))
@@ -211,19 +206,26 @@ const Home = () => {
       </SwiperLayout> : null}
 
       {/* Albums by language */}
-      {(loading || data?.languageAlbums?.length) ? <SwiperLayout title={`${Language} Albums`}>
-        {
-          loading ? (
-            <SongCardSkeleton />
-          ) : (
-            data?.languageAlbums?.map((album) => (
-              <SwiperSlide key={album?.id}>
-                <SongCard song={album} activeSong={activeSong} isPlaying={isPlaying} />
-              </SwiperSlide>
-            ))
-          )
-        }
-      </SwiperLayout> : null}
+      {loading ? (
+        <SwiperLayout title={"Albums by Language"}>
+          <SongCardSkeleton />
+        </SwiperLayout>
+      ) : (
+        data?.languageAlbumsByLanguage?.map((entry) =>
+          entry.albums.length ? (
+            <SwiperLayout
+              key={entry.language}
+              title={`${entry.language.charAt(0).toUpperCase()}${entry.language.slice(1)} Albums`}
+            >
+              {entry.albums.map((album) => (
+                <SwiperSlide key={`${entry.language}-${album?.id}`}>
+                  <SongCard song={album} activeSong={activeSong} isPlaying={isPlaying} />
+                </SwiperSlide>
+              ))}
+            </SwiperLayout>
+          ) : null
+        )
+      )}
 
       {/* Songs with lyrics */}
       {languages?.some(

@@ -12,17 +12,29 @@ const Lyrics = ({ activeSong }) => {
   const { currentSongs, autoAdd } = useSelector((state) => state.player);
   const [lyrics, setLyrics] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [lyricsRequested, setLyricsRequested] = useState(false);
   const [activeTab, setActiveTab] = useState("queue");
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      const res = await getlyricsData(activeSong?.name, activeSong);
-      setLyrics(res);
-      setLoading(false);
-    };
-    if (activeSong?.id) fetchData();
+    setLyrics(null);
+    setLyricsRequested(false);
+    setLoading(false);
+    setActiveTab("queue");
   }, [activeSong?.id, activeSong?.seokey]);
+
+  const handleLyricsTab = async () => {
+    setActiveTab("lyrics");
+    if (lyricsRequested || !activeSong?.id) return;
+
+    setLyricsRequested(true);
+    setLoading(true);
+    try {
+      const res = await getlyricsData(activeSong.name, activeSong);
+      setLyrics(res);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAutoAdd = (checked) => {
     if (checked) {
@@ -59,7 +71,7 @@ const Lyrics = ({ activeSong }) => {
         </button>
         <button
           onClick={() => {
-            setActiveTab("lyrics");
+            handleLyricsTab();
           }}
           className={`${
             activeTab === "lyrics" ? "border-[#00e6e6] border-b-2" : ""
@@ -70,7 +82,11 @@ const Lyrics = ({ activeSong }) => {
       </div>
       <div>
         {activeTab === "lyrics" ? (
-          lyrics?.success ? (
+          loading ? (
+            <div className="text-white text-lg p-4 sm:p-0 mt-5 md:w-[450px] md:h-[530px] flex items-center justify-center">
+              <span className="loader"></span>
+            </div>
+          ) : lyrics?.success ? (
             <div className="text-white text-sm sm:text-base p-4 sm:p-0 mt-5 md:w-[450px] md:h-[530px] overflow-y-scroll hideScrollBar text-center">
               {lyrics?.data?.lyrics && decodeUnicode(lyrics.data.lyrics).split(/\n|<br>/).map((line, index) => {
                 return <p key={index}>{line}</p>;

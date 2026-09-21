@@ -54,14 +54,13 @@ const Searchbar = () => {
   }, [dispatch]);
 
   const handleSubmit = (e) => {
-    inputRef.current?.blur();
-    setShowSuggestions(false);
-    if (searchTerm === '') {
-      e.preventDefault();
-      return;
-    }
     e.preventDefault();
-    router.push(`/search/${searchTerm}`);
+    const value = searchTerm.trim();
+    inputRef.current?.blur();
+    focusedRef.current = false;
+    setShowSuggestions(false);
+    if (!value) return;
+    router.push(`/search/${encodeURIComponent(value)}`);
   };
   const handleFocus = () => {
     focusedRef.current = true;
@@ -93,9 +92,14 @@ const Searchbar = () => {
         onBlur={handleBlur}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === "Escape") {
+            event.preventDefault();
             event.stopPropagation();
-            inputRef.current?.blur();
-            setShowSuggestions(false);
+            if (event.key === "Enter") {
+              event.currentTarget.form?.requestSubmit();
+            } else {
+              inputRef.current?.blur();
+              setShowSuggestions(false);
+            }
           }
         }}
           name="search-field"
